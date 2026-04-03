@@ -78,6 +78,7 @@ Protected routes require a signed-in Clerk user; the app syncs a Convex `users` 
 - [`docs/scran-prd.md`](./docs/scran-prd.md) — product requirements
 - [`docs/build-log.md`](./docs/build-log.md) — what’s built and what’s next
 - [`docs/feedback-phase1.md`](./docs/feedback-phase1.md) — walkthrough feedback and backlog notes
+- [`docs/agent-natural-language.md`](./docs/agent-natural-language.md) — how NL/agents should hook into Convex (when you build that)
 
 ## Theme
 

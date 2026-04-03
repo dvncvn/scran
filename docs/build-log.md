@@ -73,6 +73,12 @@ Living document. Tracks what's been done, what's in progress, and what's next. U
 
 ---
 
+## Agent / natural language (future)
+
+When starting NL or agent-driven flows, use **[`docs/agent-natural-language.md`](./agent-natural-language.md)** for architecture principles (structured tools, same Convex surface, bulk mutations). Product intent is in the PRD **§8.6**.
+
+---
+
 ## Phase 1 Scope Boundaries
 > Explicitly NOT building these yet. Schema fields may exist but no UI.
 

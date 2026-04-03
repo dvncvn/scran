@@ -226,6 +226,11 @@ Built-in rules (configurable by household):
 ### 8.5 Special Event Awareness
 - If a day is flagged as a special event (birthday, holiday), suggestions for that day should reflect it: more elaborate, celebratory, possibly higher effort and indulgence.
 
+### 8.6 Natural language control & agents
+- Beyond one-off suggestion overrides (§8.3), users should eventually **drive the app in plain language**: e.g. add a recipe from a description, plan the next week, copy from a previous week, bias toward favorites or “haven’t had in a while,” subject to the same guardrails (§8.2).
+- Implementation should treat the backend as the **single source of truth**: agents and NL map to **structured operations** (Convex mutations/queries), not ad-hoc writes. Household API keys and model choice follow the multi-model approach elsewhere in this doc.
+- **Engineering shape** (tool layer, bulk mutations, what to defer): see [`docs/agent-natural-language.md`](./agent-natural-language.md).
+
 ---
 
 ## 9. Shopping List
