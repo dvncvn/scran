@@ -4,8 +4,10 @@ import { useConvexAuth, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useMutation } from "convex/react";
+import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
 import { api } from "../../../convex/_generated/api";
+import { ThemeToggle } from "../../../components/features/ThemeToggle";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
@@ -27,20 +29,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [user, router]);
 
-  // Wait for Convex auth to sync with Clerk, then for user record
-  if (authLoading || !isAuthenticated || user === undefined || user === null) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-zinc-400 text-sm">Loading...</div>
-      </div>
-    );
-  }
-
-  if (!user.householdId) {
-    return null; // redirecting to onboarding
-  }
-
-  const firstName = user.displayName.split(" ")[0];
+  const waitingForUser =
+    isAuthenticated &&
+    (user === undefined || user === null);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -48,32 +39,47 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex h-14 items-center justify-between">
             <div className="flex items-center gap-6">
-              <a href="/plan" className="text-lg font-semibold tracking-tight">
+              <Link
+                href="/plan"
+                className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100"
+              >
                 Scran
-              </a>
+              </Link>
               <div className="hidden sm:flex items-center gap-4 text-sm">
-                <a
+                <Link
                   href="/plan"
                   className="text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
                 >
                   Plan
-                </a>
-                <a
+                </Link>
+                <Link
                   href="/recipes"
                   className="text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
                 >
                   Recipes
-                </a>
+                </Link>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-zinc-500">{firstName}</span>
-              <UserButton afterSignOutUrl="/sign-in" />
+            <div className="flex items-center gap-2 sm:gap-3 min-h-8">
+              <ThemeToggle />
+              {isAuthenticated && !authLoading ? <UserButton /> : null}
             </div>
           </div>
         </div>
       </nav>
-      <main className="flex-1">{children}</main>
+      <main className="flex-1">
+        {authLoading || !isAuthenticated ? (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-sm text-zinc-500">
+            Loading…
+          </div>
+        ) : waitingForUser ? (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-sm text-zinc-500">
+            Loading…
+          </div>
+        ) : user && !user.householdId ? null : (
+          children
+        )}
+      </main>
     </div>
   );
 }

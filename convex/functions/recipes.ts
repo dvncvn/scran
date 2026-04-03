@@ -36,6 +36,27 @@ export const get = query({
   },
 });
 
+/** One subscription for all recipe titles on the plan grid (avoids N× useQuery per slot). */
+export const getNamesByIds = query({
+  args: {
+    householdId: v.id("households"),
+    ids: v.array(v.id("recipes")),
+  },
+  handler: async (ctx, args) => {
+    const seen = new Set<string>();
+    const out: Record<string, string> = {};
+    for (const id of args.ids) {
+      if (seen.has(id)) continue;
+      seen.add(id);
+      const doc = await ctx.db.get(id);
+      if (doc && doc.householdId === args.householdId) {
+        out[id] = doc.name;
+      }
+    }
+    return out;
+  },
+});
+
 export const search = query({
   args: {
     householdId: v.id("households"),

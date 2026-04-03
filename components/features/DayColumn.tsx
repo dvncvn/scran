@@ -1,7 +1,7 @@
 "use client";
 
 import { getDayName, getDisplayDate, isToday } from "../../lib/dates";
-import { SLOT_TYPES, SlotType } from "../../lib/constants";
+import { SLOT_TYPES } from "../../lib/constants";
 import { MealSlot } from "./MealSlot";
 import { Id } from "../../convex/_generated/dataModel";
 import { Doc } from "../../convex/_generated/dataModel";
@@ -11,9 +11,18 @@ interface DayColumnProps {
   plan: Doc<"mealPlans"> | null;
   householdId: Id<"households">;
   userId: Id<"users">;
+  recipeNames: Record<string, string>;
+  recipeNamesLoading: boolean;
 }
 
-export function DayColumn({ date, plan, householdId, userId }: DayColumnProps) {
+export function DayColumn({
+  date,
+  plan,
+  householdId,
+  userId,
+  recipeNames,
+  recipeNamesLoading,
+}: DayColumnProps) {
   const today = isToday(date);
 
   return (
@@ -52,6 +61,8 @@ export function DayColumn({ date, plan, householdId, userId }: DayColumnProps) {
               slot={slot ?? null}
               householdId={householdId}
               userId={userId}
+              recipeNames={recipeNames}
+              recipeNamesLoading={recipeNamesLoading}
             />
           );
         })}

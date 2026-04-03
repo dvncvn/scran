@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useState, useCallback, useMemo } from "react";
+import Link from "next/link";
+import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { SlotType } from "../../lib/constants";
@@ -21,6 +22,8 @@ interface MealSlotProps {
   } | null;
   householdId: Id<"households">;
   userId: Id<"users">;
+  recipeNames: Record<string, string>;
+  recipeNamesLoading: boolean;
 }
 
 const slotLabels: Record<SlotType, string> = {
@@ -36,24 +39,35 @@ export function MealSlot({
   slot,
   householdId,
   userId,
+  recipeNames,
+  recipeNamesLoading,
 }: MealSlotProps) {
   const [showModal, setShowModal] = useState(false);
   const [pendingRemoval, setPendingRemoval] = useState(false);
   const removeSlot = useMutation(api.functions.mealPlans.removeSlot);
-  const assignSlot = useMutation(api.functions.mealPlans.assignSlot);
 
-  // Fetch recipe name if this slot has a recipe
-  const recipe = useQuery(
-    api.functions.recipes.get,
-    slot?.recipeId ? { id: slot.recipeId } : "skip"
-  );
+  const recipeTitle = useMemo(() => {
+    if (!slot?.recipeId || slot.entryType !== "recipe") return null;
+    return recipeNames[slot.recipeId];
+  }, [slot, recipeNames]);
+
+  const showRecipeNamePending =
+    slot?.entryType === "recipe" &&
+    Boolean(slot.recipeId) &&
+    recipeNamesLoading &&
+    recipeTitle === undefined;
 
   const displayText =
     slot?.entryType === "recipe"
-      ? recipe?.name ?? "Loading..."
+      ? recipeTitle
       : slot?.entryType === "freeform" || slot?.entryType === "leftover"
         ? slot.freeformText
         : null;
+
+  const undoLabel =
+    slot?.entryType === "recipe" && slot.recipeId
+      ? (recipeNames[slot.recipeId] ?? "meal")
+      : displayText ?? slotLabels[slotType];
 
   function handleRemove(e: React.MouseEvent) {
     e.stopPropagation();
@@ -89,13 +103,17 @@ export function MealSlot({
                 {slotLabels[slotType]}
               </div>
               {slot.entryType === "recipe" && slot.recipeId ? (
-                <a
+                <Link
                   href={`/recipes/${slot.recipeId}`}
                   className="text-zinc-900 dark:text-zinc-100 hover:underline truncate block"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {displayText}
-                </a>
+                  {showRecipeNamePending ? (
+                    <span className="text-zinc-400">…</span>
+                  ) : (
+                    (displayText ?? "Recipe")
+                  )}
+                </Link>
               ) : (
                 <span className="text-zinc-700 dark:text-zinc-300 truncate block">
                   {displayText}
@@ -129,7 +147,7 @@ export function MealSlot({
 
       {pendingRemoval && (
         <UndoToast
-          message={`Removed ${displayText ?? slotLabels[slotType]}`}
+          message={`Removed ${undoLabel}`}
           onUndo={handleUndoRemoval}
           onExpire={handleConfirmRemoval}
         />

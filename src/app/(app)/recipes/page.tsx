@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
@@ -32,12 +33,12 @@ export default function RecipesPage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-semibold tracking-tight">Recipes</h1>
-        <a
+        <Link
           href="/recipes/new"
           className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
         >
           New Recipe
-        </a>
+        </Link>
       </div>
 
       <div className="mb-4">
@@ -51,25 +52,25 @@ export default function RecipesPage() {
       </div>
 
       {recipes === undefined ? (
-        <div className="text-sm text-zinc-500">Loading...</div>
+        <p className="text-sm text-zinc-500 py-6">Loading recipes…</p>
       ) : recipes.length === 0 ? (
         <div className="py-12 text-center">
           <p className="text-zinc-500 mb-4">
             {searchQuery ? "No recipes found" : "No recipes yet"}
           </p>
           {!searchQuery && (
-            <a
+            <Link
               href="/recipes/new"
               className="text-sm text-zinc-900 dark:text-zinc-100 underline"
             >
               Add your first recipe
-            </a>
+            </Link>
           )}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {recipes.map((recipe) => (
-            <a
+            <Link
               key={recipe._id}
               href={`/recipes/${recipe._id}`}
               className="rounded-lg border border-zinc-200 dark:border-zinc-700 p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors"
@@ -101,7 +102,7 @@ export default function RecipesPage() {
                   {new Date(recipe.lastCookedAt).toLocaleDateString()}
                 </div>
               )}
-            </a>
+            </Link>
           ))}
         </div>
       )}
