@@ -12,7 +12,9 @@ import type * as functions_chefs from "../functions/chefs.js";
 import type * as functions_households from "../functions/households.js";
 import type * as functions_mealPlans from "../functions/mealPlans.js";
 import type * as functions_recipes from "../functions/recipes.js";
+import type * as functions_shoppingLists from "../functions/shoppingLists.js";
 import type * as functions_users from "../functions/users.js";
+import type * as lib_aggregateIngredients from "../lib/aggregateIngredients.js";
 
 import type {
   ApiFromModules,
@@ -25,7 +27,9 @@ declare const fullApi: ApiFromModules<{
   "functions/households": typeof functions_households;
   "functions/mealPlans": typeof functions_mealPlans;
   "functions/recipes": typeof functions_recipes;
+  "functions/shoppingLists": typeof functions_shoppingLists;
   "functions/users": typeof functions_users;
+  "lib/aggregateIngredients": typeof lib_aggregateIngredients;
 }>;
 
 /**

@@ -87,23 +87,34 @@ export const search = query({
       );
     }
 
-    if (!args.query.trim()) return filtered;
-
-    // Build a chef name lookup for recipes that have a chefId
+    // Build chef name lookup once for all filtered recipes
     const chefIds = new Set(
       filtered.map((r) => r.chefId).filter((id): id is NonNullable<typeof id> => !!id)
     );
     const chefNames: Record<string, string> = {};
     for (const id of chefIds) {
       const chef = await ctx.db.get(id);
-      if (chef) chefNames[id] = chef.name.toLowerCase();
+      if (chef) chefNames[id] = chef.name;
     }
 
+    // Project to lightweight results — no ingredients/steps over the wire
+    const results = filtered.map((r) => ({
+      _id: r._id,
+      name: r.name,
+      cuisineType: r.cuisineType ?? null,
+      effortLevel: r.effortLevel ?? null,
+      householdRating: r.householdRating ?? null,
+      lastCookedAt: r.lastCookedAt ?? null,
+      chefName: r.chefId ? chefNames[r.chefId] ?? null : null,
+    }));
+
+    if (!args.query.trim()) return results;
+
     const lower = args.query.toLowerCase();
-    return filtered.filter(
+    return results.filter(
       (r) =>
         r.name.toLowerCase().includes(lower) ||
-        (r.chefId && chefNames[r.chefId]?.includes(lower))
+        (r.chefName?.toLowerCase().includes(lower))
     );
   },
 });

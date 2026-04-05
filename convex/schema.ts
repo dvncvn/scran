@@ -200,4 +200,31 @@ export default defineSchema({
     storeSection: v.optional(v.string()),
     addedBy: v.id("users"),
   }).index("by_householdId", ["householdId"]),
+
+  shoppingLists: defineTable({
+    householdId: v.id("households"),
+    generatedAt: v.number(),
+    generatedBy: v.id("users"),
+    dateRangeStart: v.string(),
+    dateRangeEnd: v.string(),
+    items: v.array(
+      v.object({
+        name: v.string(),
+        quantity: v.number(),
+        unit: v.string(),
+        storeSection: v.string(),
+        sourceRecipeIds: v.array(v.id("recipes")),
+        checked: v.boolean(),
+      })
+    ),
+    manualItems: v.array(
+      v.object({
+        name: v.string(),
+        storeSection: v.string(),
+        checked: v.boolean(),
+      })
+    ),
+  })
+    .index("by_householdId", ["householdId"])
+    .index("by_householdId_generatedAt", ["householdId", "generatedAt"]),
 });

@@ -15,10 +15,18 @@ import {
   UNITS,
   STORE_SECTIONS,
 } from "../../lib/constants";
+import { parseFraction, formatQuantity } from "../../lib/fractions";
 
-interface Ingredient {
+interface IngredientData {
   name: string;
   quantity: number;
+  unit: string;
+  storeSection?: string;
+}
+
+interface IngredientFormRow {
+  name: string;
+  quantityText: string;
   unit: string;
   storeSection?: string;
 }
@@ -35,7 +43,7 @@ interface RecipeFormProps {
   initialData?: {
     id: Id<"recipes">;
     name: string;
-    ingredients: Ingredient[];
+    ingredients: IngredientData[];
     steps: Step[];
     servings: number;
     chefId?: Id<"chefs">;
@@ -66,8 +74,13 @@ export function RecipeForm({
   const updateRecipe = useMutation(api.functions.recipes.update);
 
   const [name, setName] = useState(initialData?.name ?? "");
-  const [ingredients, setIngredients] = useState<Ingredient[]>(
-    initialData?.ingredients ?? [{ name: "", quantity: 1, unit: "whole" }]
+  const [ingredients, setIngredients] = useState<IngredientFormRow[]>(
+    initialData?.ingredients.map((ing) => ({
+      name: ing.name,
+      quantityText: formatQuantity(ing.quantity),
+      unit: ing.unit,
+      storeSection: ing.storeSection,
+    })) ?? [{ name: "", quantityText: "1", unit: "whole" }]
   );
   const [steps, setSteps] = useState<Step[]>(
     initialData?.steps ?? [{ order: 1, instruction: "" }]
@@ -139,7 +152,7 @@ export function RecipeForm({
   function addIngredient() {
     setIngredients([
       ...ingredients,
-      { name: "", quantity: 1, unit: "whole" },
+      { name: "", quantityText: "1", unit: "whole" },
     ]);
   }
 
@@ -147,7 +160,7 @@ export function RecipeForm({
     setIngredients(ingredients.filter((_, i) => i !== index));
   }
 
-  function updateIngredient(index: number, updates: Partial<Ingredient>) {
+  function updateIngredient(index: number, updates: Partial<IngredientFormRow>) {
     setIngredients(
       ingredients.map((ing, i) => (i === index ? { ...ing, ...updates } : ing))
     );
@@ -186,7 +199,14 @@ export function RecipeForm({
 
     setIsSubmitting(true);
     try {
-      const validIngredients = ingredients.filter((i) => i.name.trim());
+      const validIngredients = ingredients
+        .filter((i) => i.name.trim())
+        .map((i) => ({
+          name: i.name,
+          quantity: parseFraction(i.quantityText) || 0,
+          unit: i.unit,
+          storeSection: i.storeSection,
+        }));
       const validSteps = steps.filter((s) => s.instruction.trim());
 
       // Resolve chef — create if new, reuse if existing
@@ -372,16 +392,14 @@ export function RecipeForm({
                 className="flex-1 rounded-md border border-zinc-200 px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
               />
               <input
-                type="number"
-                value={ing.quantity}
+                type="text"
+                inputMode="numeric"
+                value={ing.quantityText}
                 onChange={(e) =>
-                  updateIngredient(i, {
-                    quantity: parseFloat(e.target.value) || 0,
-                  })
+                  updateIngredient(i, { quantityText: e.target.value })
                 }
+                placeholder="1"
                 className="w-16 rounded-md border border-zinc-200 px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-                min={0}
-                step="any"
               />
               <select
                 value={ing.unit}

@@ -1,6 +1,7 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
+import { useRouter } from "next/navigation";
 import { api } from "../../../../convex/_generated/api";
 import { useMemo, useState } from "react";
 import { addDays, getDateRange } from "../../../../lib/dates";
@@ -11,7 +12,10 @@ import { collectRecipeIdsFromPlans } from "../../../../lib/mealPlanRecipes";
 
 export default function PlanPage() {
   const user = useQuery(api.functions.users.currentUser);
+  const router = useRouter();
   const [startDate, setStartDate] = useState(() => new Date());
+  const [generatingList, setGeneratingList] = useState(false);
+  const generateList = useMutation(api.functions.shoppingLists.generate);
 
   const dates = getDateRange(startDate, CALENDAR_DAYS);
   const startStr = dates[0];
@@ -41,6 +45,22 @@ export default function PlanPage() {
       ? { householdId, ids: recipeIds }
       : "skip"
   );
+
+  const handleGenerateList = async () => {
+    if (!householdId || !user) return;
+    setGeneratingList(true);
+    try {
+      const listId = await generateList({
+        householdId,
+        startDate: startStr,
+        endDate: endStr,
+        generatedBy: user._id,
+      });
+      router.push(`/shopping/${listId}`);
+    } finally {
+      setGeneratingList(false);
+    }
+  };
 
   if (!user?.householdId) return null;
 
@@ -76,10 +96,19 @@ export default function PlanPage() {
           >
             &rarr;
           </button>
+          <span className="w-px h-5 bg-zinc-200 dark:bg-zinc-700 mx-1" />
+          <button
+            onClick={handleGenerateList}
+            disabled={generatingList}
+            className="px-3 py-1.5 text-sm rounded-md text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800 disabled:opacity-40"
+            title="Generate shopping list for these days"
+          >
+            {generatingList ? "..." : "Shopping List"}
+          </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
         {dates.map((date) => (
           <DayColumn
             key={date}

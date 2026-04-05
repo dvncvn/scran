@@ -31,7 +31,7 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col min-w-0 overflow-x-hidden">
         <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
         <ConvexClientProvider>{children}</ConvexClientProvider>
       </body>

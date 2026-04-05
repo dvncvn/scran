@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useEscapeKey } from "../../hooks/useEscapeKey";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
@@ -32,11 +32,23 @@ export function SlotAssignModal({
 }: SlotAssignModalProps) {
   const [inputValue, setInputValue] = useState("");
 
-  const recipes = useQuery(api.functions.recipes.search, {
+  // Single stable subscription — fetch all recipes for this slot type, filter client-side
+  const allRecipes = useQuery(api.functions.recipes.search, {
     householdId,
-    query: inputValue,
+    query: "",
     mealType: slotType,
   });
+
+  const recipes = useMemo(() => {
+    if (!allRecipes) return undefined;
+    const trimmed = inputValue.trim().toLowerCase();
+    if (!trimmed) return allRecipes;
+    return allRecipes.filter(
+      (r) =>
+        r.name.toLowerCase().includes(trimmed) ||
+        r.chefName?.toLowerCase().includes(trimmed)
+    );
+  }, [allRecipes, inputValue]);
 
   const assignSlot = useMutation(api.functions.mealPlans.assignSlot);
 
@@ -132,7 +144,7 @@ export function SlotAssignModal({
           />
 
           <div className="max-h-56 overflow-y-auto">
-            {/* Recipe results while typing (empty query lists recipes only in the block below) */}
+            {/* Recipe results while typing */}
             {hasInput &&
               hasRecipeResults &&
               recipes.map((recipe) => (
@@ -142,11 +154,9 @@ export function SlotAssignModal({
                   className="w-full text-left px-3 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-md"
                 >
                   <div className="font-medium">{recipe.name}</div>
-                  {recipe.cuisineType && (
-                    <div className="text-xs text-zinc-500">
-                      {recipe.cuisineType}
-                    </div>
-                  )}
+                  <div className="text-xs text-zinc-500">
+                    {[recipe.chefName, recipe.cuisineType].filter(Boolean).join(" · ")}
+                  </div>
                 </button>
               ))}
 
@@ -183,11 +193,9 @@ export function SlotAssignModal({
                       className="w-full text-left px-3 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-md"
                     >
                       <div className="font-medium">{recipe.name}</div>
-                      {recipe.cuisineType && (
-                        <div className="text-xs text-zinc-500">
-                          {recipe.cuisineType}
-                        </div>
-                      )}
+                      <div className="text-xs text-zinc-500">
+                        {[recipe.chefName, recipe.cuisineType].filter(Boolean).join(" · ")}
+                      </div>
                     </button>
                   ))
                 ) : (

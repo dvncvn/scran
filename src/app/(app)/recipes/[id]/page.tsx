@@ -7,6 +7,7 @@ import { useEscapeKey } from "../../../../../hooks/useEscapeKey";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
 import { RecipeForm } from "../../../../../components/features/RecipeForm";
+import { formatQuantity } from "../../../../../lib/fractions";
 
 export default function RecipeDetailPage() {
   const params = useParams();
@@ -156,7 +157,7 @@ export default function RecipeDetailPage() {
             {recipe.ingredients.map((ing, i) => (
               <li key={i} className="text-sm">
                 <span className="text-zinc-600 dark:text-zinc-400">
-                  {ing.quantity} {ing.unit}
+                  {formatQuantity(ing.quantity)} {ing.unit}
                 </span>{" "}
                 {ing.name}
               </li>
