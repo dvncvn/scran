@@ -17,6 +17,10 @@ export default function RecipeDetailPage() {
 
   const recipe = useQuery(api.functions.recipes.get, { id: recipeId });
   const user = useQuery(api.functions.users.currentUser);
+  const chef = useQuery(
+    api.functions.chefs.get,
+    recipe?.chefId ? { id: recipe.chefId } : "skip"
+  );
   const removeRecipe = useMutation(api.functions.recipes.remove);
 
   useEscapeKey(() => setShowDeleteConfirm(false), showDeleteConfirm);
@@ -46,16 +50,21 @@ export default function RecipeDetailPage() {
         <RecipeForm
           householdId={user.householdId as Id<"households">}
           userId={user._id}
+          onSave={() => setIsEditing(false)}
           initialData={{
             id: recipe._id,
             name: recipe.name,
             ingredients: recipe.ingredients,
             steps: recipe.steps,
             servings: recipe.servings,
+            chefId: recipe.chefId,
+            chefName: chef?.name,
+            mealTypes: recipe.mealTypes,
             cuisineType: recipe.cuisineType,
             dietaryTags: recipe.dietaryTags,
             effortLevel: recipe.effortLevel,
             indulgenceLevel: recipe.indulgenceLevel,
+            sourceUrl: recipe.sourceUrl,
             cookbookRef: recipe.cookbookRef,
             calories: recipe.calories,
             proteinGrams: recipe.proteinGrams,
@@ -82,6 +91,10 @@ export default function RecipeDetailPage() {
               {recipe.name}
             </h1>
             <div className="flex items-center gap-3 mt-1 text-sm text-zinc-500">
+              {chef?.name && <span>{chef.name}</span>}
+              {recipe.mealTypes && recipe.mealTypes.length > 0 && (
+                <span>{recipe.mealTypes.map((t) => t.charAt(0).toUpperCase() + t.slice(1)).join(", ")}</span>
+              )}
               {recipe.cuisineType && <span>{recipe.cuisineType}</span>}
               {recipe.effortLevel && <span>{recipe.effortLevel}</span>}
               {recipe.indulgenceLevel && <span>{recipe.indulgenceLevel}</span>}

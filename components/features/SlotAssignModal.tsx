@@ -35,6 +35,7 @@ export function SlotAssignModal({
   const recipes = useQuery(api.functions.recipes.search, {
     householdId,
     query: inputValue,
+    mealType: slotType,
   });
 
   const assignSlot = useMutation(api.functions.mealPlans.assignSlot);

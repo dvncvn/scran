@@ -75,6 +75,7 @@ export default defineSchema({
         page: v.optional(v.number()),
       })
     ),
+    chefId: v.optional(v.id("chefs")),
     addedBy: v.id("users"),
     cuisineType: v.optional(v.string()),
     dietaryTags: v.optional(v.array(v.string())),
@@ -101,6 +102,16 @@ export default defineSchema({
         v.literal("special-occasion")
       )
     ),
+    mealTypes: v.optional(
+      v.array(
+        v.union(
+          v.literal("breakfast"),
+          v.literal("lunch"),
+          v.literal("dinner"),
+          v.literal("snack")
+        )
+      )
+    ),
     timesCooked: v.number(),
     lastCookedAt: v.optional(v.number()),
     notes: v.optional(v.string()),
@@ -121,6 +132,14 @@ export default defineSchema({
     householdRating: v.optional(v.number()),
     addedBy: v.id("users"),
   }).index("by_householdId", ["householdId"]),
+
+  chefs: defineTable({
+    householdId: v.id("households"),
+    name: v.string(),
+    addedBy: v.id("users"),
+  })
+    .index("by_householdId", ["householdId"])
+    .index("by_householdId_name", ["householdId", "name"]),
 
   mealPlans: defineTable({
     householdId: v.id("households"),

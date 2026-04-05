@@ -98,8 +98,6 @@ export default function ConvexClientProvider({
     <ClerkProvider
       signInUrl="/sign-in"
       signUpUrl="/sign-up"
-      afterSignInUrl="/plan"
-      afterSignUpUrl="/onboarding"
       afterSignOutUrl="/sign-in"
       appearance={isDark ? clerkDarkAppearance : clerkAppearance}
     >

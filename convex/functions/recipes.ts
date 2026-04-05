@@ -61,6 +61,14 @@ export const search = query({
   args: {
     householdId: v.id("households"),
     query: v.string(),
+    mealType: v.optional(
+      v.union(
+        v.literal("breakfast"),
+        v.literal("lunch"),
+        v.literal("dinner"),
+        v.literal("snack")
+      )
+    ),
   },
   handler: async (ctx, args) => {
     const all = await ctx.db
@@ -70,10 +78,33 @@ export const search = query({
       )
       .collect();
 
-    if (!args.query.trim()) return all;
+    let filtered = all;
+
+    // Filter by meal type if provided (recipes with no mealTypes are shown everywhere)
+    if (args.mealType) {
+      filtered = filtered.filter(
+        (r) => !r.mealTypes || r.mealTypes.length === 0 || r.mealTypes.includes(args.mealType!)
+      );
+    }
+
+    if (!args.query.trim()) return filtered;
+
+    // Build a chef name lookup for recipes that have a chefId
+    const chefIds = new Set(
+      filtered.map((r) => r.chefId).filter((id): id is NonNullable<typeof id> => !!id)
+    );
+    const chefNames: Record<string, string> = {};
+    for (const id of chefIds) {
+      const chef = await ctx.db.get(id);
+      if (chef) chefNames[id] = chef.name.toLowerCase();
+    }
 
     const lower = args.query.toLowerCase();
-    return all.filter((r) => r.name.toLowerCase().includes(lower));
+    return filtered.filter(
+      (r) =>
+        r.name.toLowerCase().includes(lower) ||
+        (r.chefId && chefNames[r.chefId]?.includes(lower))
+    );
   },
 });
 
@@ -119,6 +150,7 @@ export const create = mutation({
         page: v.optional(v.number()),
       })
     ),
+    chefId: v.optional(v.id("chefs")),
     addedBy: v.id("users"),
     cuisineType: v.optional(v.string()),
     dietaryTags: v.optional(v.array(v.string())),
@@ -127,6 +159,16 @@ export const create = mutation({
     proteinGrams: v.optional(v.number()),
     fatGrams: v.optional(v.number()),
     carbGrams: v.optional(v.number()),
+    mealTypes: v.optional(
+      v.array(
+        v.union(
+          v.literal("breakfast"),
+          v.literal("lunch"),
+          v.literal("dinner"),
+          v.literal("snack")
+        )
+      )
+    ),
     effortLevel: v.optional(
       v.union(
         v.literal("easy"),
@@ -174,6 +216,7 @@ export const update = mutation({
         page: v.optional(v.number()),
       })
     ),
+    chefId: v.optional(v.id("chefs")),
     cuisineType: v.optional(v.string()),
     dietaryTags: v.optional(v.array(v.string())),
     allergenFlags: v.optional(v.array(v.string())),
@@ -183,6 +226,16 @@ export const update = mutation({
     carbGrams: v.optional(v.number()),
     householdRating: v.optional(v.number()),
     ratedBy: v.optional(v.id("users")),
+    mealTypes: v.optional(
+      v.array(
+        v.union(
+          v.literal("breakfast"),
+          v.literal("lunch"),
+          v.literal("dinner"),
+          v.literal("snack")
+        )
+      )
+    ),
     effortLevel: v.optional(
       v.union(
         v.literal("easy"),

@@ -1,6 +1,9 @@
 export const SLOT_TYPES = ["breakfast", "lunch", "dinner", "snack"] as const;
 export type SlotType = (typeof SLOT_TYPES)[number];
 
+export const MEAL_TYPES = ["breakfast", "lunch", "dinner", "snack"] as const;
+export type MealType = (typeof MEAL_TYPES)[number];
+
 export const EFFORT_LEVELS = ["easy", "medium", "involved", "project"] as const;
 export type EffortLevel = (typeof EFFORT_LEVELS)[number];
 

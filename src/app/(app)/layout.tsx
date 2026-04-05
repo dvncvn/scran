@@ -68,10 +68,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               >
                 Scran
               </Link>
-              {household?.name && (
+              {household?.name ? (
                 <span className="text-sm text-zinc-400 dark:text-zinc-500">
                   {household.name}
                 </span>
+              ) : household === null ? null : (
+                <span className="inline-block h-4 w-24 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700" />
               )}
               <div className="hidden sm:flex items-center gap-4 text-sm">
                 <Link
@@ -90,7 +92,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
             <div className="flex items-center gap-2 sm:gap-3 min-h-8">
               <ThemeToggle />
-              {isAuthenticated && !authLoading ? <UserButton /> : null}
+              {isAuthenticated && !authLoading ? (
+                <UserButton />
+              ) : (
+                <span className="inline-block h-8 w-8 animate-pulse rounded-full bg-zinc-200 dark:bg-zinc-700" />
+              )}
             </div>
           </div>
         </div>

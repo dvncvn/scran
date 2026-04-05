@@ -5,11 +5,13 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { useRouter } from "next/navigation";
+import { ChefInput } from "./ChefInput";
 import {
   CUISINE_TYPES,
   EFFORT_LEVELS,
   INDULGENCE_LEVELS,
   DIETARY_TAGS,
+  MEAL_TYPES,
   UNITS,
   STORE_SECTIONS,
 } from "../../lib/constants";
@@ -36,22 +38,28 @@ interface RecipeFormProps {
     ingredients: Ingredient[];
     steps: Step[];
     servings: number;
+    chefId?: Id<"chefs">;
+    chefName?: string;
+    mealTypes?: string[];
     cuisineType?: string;
     dietaryTags?: string[];
     effortLevel?: string;
     indulgenceLevel?: string;
+    sourceUrl?: string;
     cookbookRef?: { title: string; page?: number };
     calories?: number;
     proteinGrams?: number;
     fatGrams?: number;
     carbGrams?: number;
   };
+  onSave?: () => void;
 }
 
 export function RecipeForm({
   householdId,
   userId,
   initialData,
+  onSave,
 }: RecipeFormProps) {
   const router = useRouter();
   const createRecipe = useMutation(api.functions.recipes.create);
@@ -65,6 +73,27 @@ export function RecipeForm({
     initialData?.steps ?? [{ order: 1, instruction: "" }]
   );
   const [servings, setServings] = useState(initialData?.servings ?? 4);
+  const [chefValue, setChefValue] = useState<{
+    id?: Id<"chefs">;
+    name: string;
+  }>({
+    id: initialData?.chefId,
+    name: initialData?.chefName ?? "",
+  });
+  const getOrCreateChef = useMutation(api.functions.chefs.getOrCreate);
+  const [sourceType, setSourceType] = useState<"cookbook" | "url">(
+    initialData?.sourceUrl ? "url" : "cookbook"
+  );
+  const [sourceUrl, setSourceUrl] = useState(initialData?.sourceUrl ?? "");
+  const [cookbookTitle, setCookbookTitle] = useState(
+    initialData?.cookbookRef?.title ?? ""
+  );
+  const [cookbookPage, setCookbookPage] = useState<number | undefined>(
+    initialData?.cookbookRef?.page
+  );
+  const [mealTypes, setMealTypes] = useState<string[]>(
+    initialData?.mealTypes ?? []
+  );
   const [cuisineType, setCuisineType] = useState(
     initialData?.cuisineType ?? ""
   );
@@ -76,12 +105,6 @@ export function RecipeForm({
   );
   const [indulgenceLevel, setIndulgenceLevel] = useState(
     initialData?.indulgenceLevel ?? ""
-  );
-  const [cookbookTitle, setCookbookTitle] = useState(
-    initialData?.cookbookRef?.title ?? ""
-  );
-  const [cookbookPage, setCookbookPage] = useState<number | undefined>(
-    initialData?.cookbookRef?.page
   );
   const [calories, setCalories] = useState<number | undefined>(
     initialData?.calories
@@ -166,11 +189,30 @@ export function RecipeForm({
       const validIngredients = ingredients.filter((i) => i.name.trim());
       const validSteps = steps.filter((s) => s.instruction.trim());
 
+      // Resolve chef — create if new, reuse if existing
+      let chefId: Id<"chefs"> | undefined;
+      if (chefValue.name.trim()) {
+        if (chefValue.id) {
+          chefId = chefValue.id;
+        } else {
+          chefId = await getOrCreateChef({
+            householdId,
+            name: chefValue.name.trim(),
+            addedBy: userId,
+          });
+        }
+      }
+
       const data = {
         name,
         ingredients: validIngredients,
         steps: validSteps.map((s, i) => ({ ...s, order: i + 1 })),
         servings,
+        chefId,
+        mealTypes:
+          mealTypes.length > 0
+            ? (mealTypes as ("breakfast" | "lunch" | "dinner" | "snack")[])
+            : undefined,
         cuisineType: cuisineType || undefined,
         dietaryTags: dietaryTags.length > 0 ? dietaryTags : undefined,
         effortLevel: (effortLevel || undefined) as
@@ -185,9 +227,11 @@ export function RecipeForm({
           | "indulgent"
           | "special-occasion"
           | undefined,
-        cookbookRef: cookbookTitle
-          ? { title: cookbookTitle, page: cookbookPage }
-          : undefined,
+        sourceUrl: sourceType === "url" && sourceUrl.trim() ? sourceUrl.trim() : undefined,
+        cookbookRef:
+          sourceType === "cookbook" && cookbookTitle.trim()
+            ? { title: cookbookTitle.trim(), page: cookbookPage }
+            : undefined,
         calories,
         proteinGrams,
         fatGrams,
@@ -196,14 +240,17 @@ export function RecipeForm({
 
       if (initialData) {
         await updateRecipe({ id: initialData.id, ...data });
-        router.replace(`/recipes/${initialData.id}`);
-        router.refresh();
+        if (onSave) {
+          onSave();
+        } else {
+          router.replace(`/recipes/${initialData.id}`);
+        }
       } else {
         const id = await createRecipe({
           ...data,
           householdId,
           addedBy: userId,
-          source: "manual",
+          source: sourceType === "url" && sourceUrl.trim() ? "url" : "manual",
         });
         router.replace(`/recipes/${id}`);
         router.refresh();
@@ -238,6 +285,75 @@ export function RecipeForm({
             duplicate?
           </div>
         )}
+      </div>
+
+      {/* Source */}
+      <div className="space-y-3">
+        <ChefInput
+          householdId={householdId}
+          value={chefValue}
+          onChange={setChefValue}
+        />
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <label className="text-sm font-medium">From</label>
+            <div className="flex rounded-md border border-zinc-200 dark:border-zinc-700 text-sm">
+              <button
+                type="button"
+                onClick={() => setSourceType("cookbook")}
+                className={`px-3 py-1 rounded-l-md ${
+                  sourceType === "cookbook"
+                    ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+                    : "text-zinc-600 hover:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                }`}
+              >
+                Cookbook
+              </button>
+              <button
+                type="button"
+                onClick={() => setSourceType("url")}
+                className={`px-3 py-1 rounded-r-md ${
+                  sourceType === "url"
+                    ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+                    : "text-zinc-600 hover:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                }`}
+              >
+                URL
+              </button>
+            </div>
+          </div>
+          {sourceType === "cookbook" ? (
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={cookbookTitle}
+                onChange={(e) => setCookbookTitle(e.target.value)}
+                placeholder="Book title"
+                className="flex-1 rounded-md border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+              />
+              <input
+                type="number"
+                value={cookbookPage ?? ""}
+                onChange={(e) =>
+                  setCookbookPage(
+                    e.target.value ? parseInt(e.target.value) : undefined
+                  )
+                }
+                placeholder="Page"
+                className="w-20 rounded-md border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                min={1}
+              />
+            </div>
+          ) : (
+            <input
+              type="url"
+              value={sourceUrl}
+              onChange={(e) => setSourceUrl(e.target.value)}
+              placeholder="https://..."
+              className="w-full rounded-md border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            />
+          )}
+        </div>
       </div>
 
       {/* Ingredients */}
@@ -403,6 +519,36 @@ export function RecipeForm({
         />
       </div>
 
+      {/* Meal types */}
+      <div>
+        <label className="block text-sm font-medium mb-2">Meal Types</label>
+        <p className="text-xs text-zinc-500 mb-2">
+          Which meals is this recipe suitable for? Leave empty to show everywhere.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {MEAL_TYPES.map((type) => (
+            <button
+              key={type}
+              type="button"
+              onClick={() =>
+                setMealTypes((prev) =>
+                  prev.includes(type)
+                    ? prev.filter((t) => t !== type)
+                    : [...prev, type]
+                )
+              }
+              className={`px-3 py-1 rounded-full text-sm border ${
+                mealTypes.includes(type)
+                  ? "bg-zinc-900 text-white border-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 dark:border-zinc-100"
+                  : "border-zinc-200 text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
+              }`}
+            >
+              {type.charAt(0).toUpperCase() + type.slice(1)}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Metadata row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
@@ -479,33 +625,6 @@ export function RecipeForm({
         </div>
       </div>
 
-      {/* Cookbook reference */}
-      <div>
-        <label className="block text-sm font-medium mb-2">
-          Cookbook Reference (optional)
-        </label>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={cookbookTitle}
-            onChange={(e) => setCookbookTitle(e.target.value)}
-            placeholder="Book title"
-            className="flex-1 rounded-md border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-          />
-          <input
-            type="number"
-            value={cookbookPage ?? ""}
-            onChange={(e) =>
-              setCookbookPage(
-                e.target.value ? parseInt(e.target.value) : undefined
-              )
-            }
-            placeholder="Page"
-            className="w-20 rounded-md border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            min={1}
-          />
-        </div>
-      </div>
 
       {/* Nutrition */}
       <div>
