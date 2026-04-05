@@ -19,6 +19,8 @@ export default function ConvexClientProvider({
     <ClerkProvider
       signInUrl="/sign-in"
       signUpUrl="/sign-up"
+      afterSignInUrl="/plan"
+      afterSignUpUrl="/onboarding"
       afterSignOutUrl="/sign-in"
     >
       <ConvexProviderWithClerk client={convex} useAuth={useAuth}>

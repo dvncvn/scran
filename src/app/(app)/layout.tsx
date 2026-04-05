@@ -2,7 +2,7 @@
 
 import { useConvexAuth, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useMutation } from "convex/react";
 import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
@@ -14,24 +14,43 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const getOrCreateUser = useMutation(api.functions.users.getOrCreateUser);
   const user = useQuery(api.functions.users.currentUser);
   const router = useRouter();
+  const syncingRef = useRef(false);
 
-  // Sync user to Convex on first load
+  // Sync user to Convex on first authenticated load where no user doc exists.
+  // user === undefined means query is still loading — don't act on that.
+  // user === null means query ran and found no user — create one.
   useEffect(() => {
-    if (isAuthenticated && user === null) {
-      getOrCreateUser();
-    }
+    if (!isAuthenticated || user === undefined || user !== null || syncingRef.current) return;
+    syncingRef.current = true;
+
+    let cancelled = false;
+    const attempt = (retries: number) => {
+      getOrCreateUser()
+        .catch(() => {
+          if (!cancelled && retries > 0) {
+            setTimeout(() => attempt(retries - 1), 500);
+          }
+        })
+        .finally(() => {
+          if (!cancelled) syncingRef.current = false;
+        });
+    };
+    attempt(5);
+
+    return () => { cancelled = true; };
   }, [isAuthenticated, user, getOrCreateUser]);
 
-  // Redirect to onboarding if no household
+  // Redirect to onboarding if user exists but has no household
   useEffect(() => {
     if (user && !user.householdId) {
       router.push("/onboarding");
     }
   }, [user, router]);
 
-  const waitingForUser =
-    isAuthenticated &&
-    (user === undefined || user === null);
+  // Only block rendering while the query is still loading (undefined),
+  // NOT when it returned null (we handle that with the sync effect above).
+  const waitingForAuth = authLoading || !isAuthenticated;
+  const waitingForUser = isAuthenticated && user === undefined;
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -68,15 +87,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </nav>
       <main className="flex-1">
-        {authLoading || !isAuthenticated ? (
+        {waitingForAuth || waitingForUser ? (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-sm text-zinc-500">
             Loading…
           </div>
-        ) : waitingForUser ? (
+        ) : user === null ? (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-sm text-zinc-500">
-            Loading…
+            Setting up your account…
           </div>
-        ) : user && !user.householdId ? null : (
+        ) : !user?.householdId ? null : (
           children
         )}
       </main>

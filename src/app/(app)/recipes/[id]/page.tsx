@@ -3,6 +3,7 @@
 import { useQuery, useMutation } from "convex/react";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
+import { useEscapeKey } from "../../../../../hooks/useEscapeKey";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
 import { RecipeForm } from "../../../../../components/features/RecipeForm";
@@ -17,6 +18,8 @@ export default function RecipeDetailPage() {
   const recipe = useQuery(api.functions.recipes.get, { id: recipeId });
   const user = useQuery(api.functions.users.currentUser);
   const removeRecipe = useMutation(api.functions.recipes.remove);
+
+  useEscapeKey(() => setShowDeleteConfirm(false), showDeleteConfirm);
 
   if (recipe === undefined || user === undefined) {
     return (

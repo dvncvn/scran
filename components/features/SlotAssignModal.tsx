@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useEscapeKey } from "../../hooks/useEscapeKey";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { SlotType } from "../../lib/constants";
+import { getDayName, getDisplayDate } from "../../lib/dates";
 
 interface SlotAssignModalProps {
   date: string;
@@ -87,15 +89,23 @@ export function SlotAssignModal({
   const hasRecipeResults = recipes && recipes.length > 0;
   const showQuickOptions = hasInput && !hasRecipeResults;
 
+  useEscapeKey(onClose, true);
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
       onClick={(e) => e.target === e.currentTarget && onClose()}
+      role="presentation"
     >
-      <div className="w-full max-w-md rounded-lg bg-white dark:bg-zinc-900 shadow-xl">
+      <div
+        className="w-full max-w-md rounded-lg bg-white dark:bg-zinc-900 shadow-xl"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="slot-assign-title"
+      >
         <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-700 px-4 py-3">
-          <h2 className="text-sm font-semibold">
-            Add {slotLabels[slotType]}
+          <h2 id="slot-assign-title" className="text-sm font-semibold">
+            Add {slotLabels[slotType]} for {getDayName(date)}, {getDisplayDate(date)}
           </h2>
           <button
             onClick={onClose}
@@ -121,8 +131,9 @@ export function SlotAssignModal({
           />
 
           <div className="max-h-56 overflow-y-auto">
-            {/* Recipe results */}
-            {hasRecipeResults &&
+            {/* Recipe results while typing (empty query lists recipes only in the block below) */}
+            {hasInput &&
+              hasRecipeResults &&
               recipes.map((recipe) => (
                 <button
                   key={recipe._id}
