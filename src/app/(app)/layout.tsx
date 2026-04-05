@@ -13,6 +13,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
   const getOrCreateUser = useMutation(api.functions.users.getOrCreateUser);
   const user = useQuery(api.functions.users.currentUser);
+  const household = useQuery(
+    api.functions.households.get,
+    user?.householdId ? { id: user.householdId } : "skip"
+  );
   const router = useRouter();
   const syncingRef = useRef(false);
 
@@ -54,7 +58,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <nav className="border-b border-zinc-200 dark:border-zinc-800">
+      <nav>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex h-14 items-center justify-between">
             <div className="flex items-center gap-6">
@@ -64,6 +68,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               >
                 Scran
               </Link>
+              {household?.name && (
+                <span className="text-sm text-zinc-400 dark:text-zinc-500">
+                  {household.name}
+                </span>
+              )}
               <div className="hidden sm:flex items-center gap-4 text-sm">
                 <Link
                   href="/plan"
