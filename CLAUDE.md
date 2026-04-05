@@ -116,32 +116,34 @@ PantryStaple
 
 ## Current Status
 
-Phase 1 — in progress. See `docs/scran-prd.md` for the full PRD, `docs/build-log.md` for detailed progress.
+Phase 1 — complete. Phase 2 starting. See `docs/scran-prd.md` for the full PRD, `docs/build-log.md` for detailed progress.
 
 ### What exists:
 - Next.js 15 + Tailwind v4 + Convex + Clerk scaffold
-- Convex schema (households, users, recipes, restaurants, mealPlans, guestProfiles, pantryStaples)
+- Convex schema (households, users, recipes, restaurants, mealPlans, guestProfiles, pantryStaples, shoppingLists)
 - Auth flow (sign-in, sign-up, onboarding, middleware, route protection)
-- Meal calendar — 5-day view with recipe/freeform slot assignment
-- Recipe CRUD — list, create, detail, edit, delete with duplicate detection
-- Calendar ↔ recipe integration
+- Meal calendar — 5-day view with recipe/freeform slot assignment, responsive single-column on mobile
+- Recipe CRUD — list, create, detail, edit, delete with duplicate detection, fraction quantities
+- Calendar ↔ recipe integration with client-side search filtering
+- Shopping lists — generate from meal plans, ingredient aggregation, auto-categorization, tap-to-check checklist, manual items, editable date ranges, history
+- Mobile bottom tab bar (Plan, Recipes, Shopping)
 
-### What's next:
-- Set up Convex + Clerk credentials and verify dev server runs
-- Responsive polish and testing at 375px / 768px / 1440px
-- Household join flow (Clerk org invites)
-- End-to-end manual testing of the full loop
+### What's next (Phase 2 — Intelligence):
+- Wire up `timesCooked`/`lastCookedAt` auto-tracking (schema fields exist, write path needed)
+- AI recipe extraction from URLs (multi-model)
+- AI meal suggestions with guardrails and reroll
+- Pantry / staples list UI
+- Leftovers tracking
 
-### Phase 1 Scope Boundaries
+### Scope Boundaries
 > Not building these yet. Schema fields may exist but no UI.
 
-- AI features (extraction, suggestions)
-- Shopping list generation
-- Stats / data visualization
+- Stats dashboard / data visualization (Phase 3, depends on tracking data)
 - Notifications
-- Pantry management UI, Guest profile UI
+- Guest profile UI
 - Step-by-step cooking mode, Import/export
 - Special event UI, Child meal override UI
+- Recurring meals / templates
 - Restaurant/leftover entry types in calendar (schema only)
 - Theming beyond Geist defaults
 

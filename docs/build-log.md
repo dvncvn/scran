@@ -79,12 +79,38 @@ When starting NL or agent-driven flows, use **[`docs/agent-natural-language.md`]
 
 ---
 
+## Phase 1g: Shopping List Generation
+> Generate from meal plans, aggregate ingredients, in-store checklist.
+
+- [x] `shoppingLists` table added to Convex schema with indexes
+- [x] Ingredient aggregation engine (`convex/lib/aggregateIngredients.ts`) — keys on name+unit, sums quantities, excludes pantry staples
+- [x] Auto-categorization of ingredients by store section (keyword mapping)
+- [x] `generate` mutation — reads meal plans, recipes, pantry staples, produces aggregated list
+- [x] `regenerate` mutation — update date range and re-aggregate (preserves manual items)
+- [x] Shopping list detail page (`/shopping/[id]`) — grouped checklist, tap-to-check, progress bar
+- [x] Editable date range on existing lists
+- [x] Manual item additions with auto-categorization
+- [x] Recipe provenance shown on each item ("for: Bolognese, Shakshuka")
+- [x] Shopping list history (`/shopping`) — recent lists with progress, delete
+- [x] "Generate Shopping List" shortcut from plan page (uses current date range)
+- [x] Shopping tab in mobile bottom nav and desktop nav
+
+### 1h: UX Polish
+- [x] Mobile bottom tab bar (Plan, Recipes, Shopping) — fixed, active state highlighting
+- [x] Plan page: single-column below `lg`, no mixed grid at mid widths
+- [x] Overflow fix: `min-w-0 overflow-x-hidden` on body and main
+- [x] Recipe search: single stable subscription + client-side filtering (eliminates jank)
+- [x] Chef name shown in search results
+- [x] Debounce hook (`useDebouncedValue`) for search inputs
+- [x] Fraction support for quantities: input ("1/3", "1 1/2"), display (½, ⅓, ¾), recipe detail + shopping list
+
+---
+
 ## Phase 1 Scope Boundaries
 > Explicitly NOT building these yet. Schema fields may exist but no UI.
 
 - AI recipe extraction from URLs
 - AI meal suggestions
-- Shopping list generation
 - Stats / data visualization
 - Notifications
 - Pantry management UI (table defined, no UI)
@@ -96,6 +122,31 @@ When starting NL or agent-driven flows, use **[`docs/agent-natural-language.md`]
 - Theming beyond Geist defaults
 - Restaurant entry type in calendar (schema supports it, not wired up)
 - Leftover entry type in calendar (schema supports it, not wired up)
+- Recurring meals / templates (PRD §15 non-goal, but architecture allows it)
+
+---
+
+## Stats Tracking — Foundations
+
+Recipe documents have `timesCooked` (number) and `lastCookedAt` (timestamp) fields.
+These need to be auto-updated when a planned meal date passes. Approach:
+
+- **Trigger:** When the plan page renders past dates with recipe slots, fire a mutation to increment `timesCooked` and update `lastCookedAt` for those recipes.
+- **Idempotency:** Track which (recipe, date) pairs have already been counted to avoid double-counting on re-renders. Options: a `cookedEvents` table, or a `countedDates` set on the meal plan doc.
+- **What this unlocks:** Inline stats ("cooked 7 times, last 3 weeks ago"), recipe sorting by frequency/recency, variety metrics, the full Phase 3 stats dashboard.
+
+This is foundational work — the schema fields exist, the write path needs to be wired up.
+
+---
+
+## Recurrence — Future Design Notes
+
+Common pattern: "yogurt every weekday for breakfast." Two approaches considered:
+
+1. **Quick-repeat (simpler):** "Copy this slot to [Mon–Fri] breakfasts." Bulk `assignSlot` mutation, no new schema. Covers 80% of the use case.
+2. **Templates/rules (richer):** `mealTemplates` table with day-of-week rules. Scheduled job or user action stamps slots onto the calendar. More powerful, more complex.
+
+Recommend starting with quick-repeat when this is prioritized.
 
 ---
 
@@ -107,6 +158,9 @@ When starting NL or agent-driven flows, use **[`docs/agent-natural-language.md`]
 | 2026-04-03 | Move PRD to `docs/`, retire `rough-plan.md` | rough-plan.md was a build prompt, not a reference. Useful content folded into build-log and CLAUDE.md. |
 | 2026-04-03 | Keep `src/` directory from scaffold | create-next-app generated `src/` structure. Works well with `@/*` alias. Updated CLAUDE.md to match. |
 | 2026-04-03 | On-demand user sync (not webhook) | Simpler for v1. getOrCreateUser runs on first app load. Can add webhook later for better reliability. |
+| 2026-04-05 | Client-side recipe search filtering | Server sends all recipes once (stable subscription), client filters with `useMemo`. Eliminates jank from multiple competing subscriptions. Scales fine for household-sized libraries. |
+| 2026-04-05 | Shopping list: keyword-based auto-categorization | Ingredient names matched against a keyword→section map during aggregation. Good enough for v1, avoids requiring users to manually categorize. |
+| 2026-04-05 | Fraction quantities stored as decimals, displayed as symbols | Schema keeps `quantity: number` (0.333 not "1/3"). UI parses fractions on input, formats with ½⅓¾ on display. Clean data, friendly UI. |
 
 ---
 
@@ -120,3 +174,11 @@ When starting NL or agent-driven flows, use **[`docs/agent-natural-language.md`]
 - Recipe CRUD: list with search, full creation form, detail view, edit/delete, duplicate detection
 - Calendar ↔ recipe integration: search recipes from slot modal, link to detail, "add new recipe" path
 - Project docs reorganized: PRD in docs/, build log created, CLAUDE.md updated
+
+### 2026-04-05
+- Shopping list generation: schema, aggregation engine, generate/regenerate mutations, checklist UI, history
+- Mobile bottom tab bar with active state highlighting
+- Plan page responsive fix (single-column below lg)
+- Recipe search UX overhaul: stable subscription, client-side filtering, chef names in results
+- Fraction quantity support across recipe form, detail view, and shopping list
+- Ingredient auto-categorization by store section
